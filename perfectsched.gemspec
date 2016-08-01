@@ -17,7 +17,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ['lib']
 
   gem.add_dependency "chrono", "~> 0.2.0"
-  gem.add_dependency "sequel", "~> 3.48.0"
+  gem.add_dependency "sequel", ">= 3.48"
   gem.add_dependency "tzinfo", "~> 1.1"
   gem.add_dependency "perfectqueue", "~> 0.8.41"
   gem.add_development_dependency "rake", "~> 0.9.2"
