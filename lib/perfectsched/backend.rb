@@ -22,6 +22,9 @@ module PerfectSched
       case config[:type]
       when nil
         raise ConfigError, "'type' option is not set"
+      when 'mongo'
+        require_backend('mongo')
+        MongoBackend.new(client, config)
       when 'rdb_compat'
         require_backend('rdb_compat')
         RDBCompatBackend.new(client, config)
