@@ -55,7 +55,7 @@ module PerfectSched
       end
 
 
-      def find(criteria = {}, options = {}, &block)
+      def find(criteria = {}, options = {})
         if criteria.is_a?(Hash)
           Enumerator.new do |y|
             cursor = @collection.find(criteria)
@@ -66,9 +66,7 @@ module PerfectSched
               cursor = cursor.limit(options[:limit])
             end
             cursor.map do |i|
-              row = i.symbolize_keys
-              yield(row) if block_given?
-              y << row
+              y << i.symbolize_keys
             end
           end
         else
@@ -90,7 +88,7 @@ module PerfectSched
 
       def list(options, &block)
         connect {
-          find({}) { |row|
+          find.each { |row|
             attributes = create_attributes(row)
             sched = ScheduleWithMetadata.new(@client, row[:_id], attributes)
             yield sched
@@ -249,7 +247,6 @@ module PerfectSched
 
         type = data.delete('type')
         if type == nil || type.empty?
-          # binding.pry if row[:_id].nil?
           type = row[:_id].split(/\./, 2)[0]
         end
 

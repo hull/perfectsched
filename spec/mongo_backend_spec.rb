@@ -105,10 +105,13 @@ describe Backend::MongoBackend do
       db.add('key', 'test', '* * * * *', 0, 'Asia/Tokyo', {}, now, now, {})
     end
     it 'lists a metadata' do
-      db.list(nil) do |x|
+      count = 0
+      ret = db.list(nil) do |x|
+        count += 1
         expect(x).to be_an_instance_of(PerfectSched::ScheduleWithMetadata)
         expect(x.key).to eq('key')
       end
+      expect(count).to eq(1)
     end
   end
 
