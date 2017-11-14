@@ -229,6 +229,7 @@ module PerfectSched
         timezone = row[:timezone] || 'UTC'
         delay = row[:delay] || 0
         cron = row[:cron]
+        last_time = raw[:last_time]
         next_time = row[:next_time]
         next_run_time = row[:timeout]
 
@@ -255,6 +256,7 @@ module PerfectSched
           :delay => delay,
           :cron => cron,
           :data => data,
+          :last_time => last_time,
           :next_time => next_time,
           :next_run_time => next_run_time,
           :type => type,
