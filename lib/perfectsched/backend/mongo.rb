@@ -193,7 +193,7 @@ module PerfectSched
         next_run_time = next_time + task_token.delay
 
         connect {
-          n = @collection.update({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time, next_time: next_time } })['n']
+          n = @collection.update({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time, next_time: next_time, last_time: Time.now.to_i } })['n']
           if n <= 0
             raise IdempotentAlreadyFinishedError, "task time=#{Time.at(scheduled_time).utc} is already finished"
           end
