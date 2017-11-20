@@ -36,8 +36,8 @@ module PerfectSched
         end
 
         uri = Mongo::URIParser.new(url)
-
-        @db = Mongo::MongoClient.from_uri(url).db(uri.db_name)
+        @mongo = Mongo::MongoClient.from_uri(url)
+        @db = @mongo.db(uri.db_name)
         @collection = @db[config[:collection] || "perfectsched"]
         @mutex = Mutex.new
 
@@ -101,7 +101,6 @@ module PerfectSched
           data = data ? data.dup : {}
           data['type'] = type
           begin
-            # n = @db["INSERT INTO `#{@table}` (id, timeout, next_time, cron, delay, data, timezone) VALUES (?, ?, ?, ?, ?, ?, ?);", key, next_run_time, next_time, cron, delay, data.to_json, timezone].insert
             @collection.insert({
               _id: key,
               timeout: next_run_time,
@@ -221,6 +220,8 @@ module PerfectSched
               end
             end
             raise
+          ensure
+            @mongo.close
           end
         end
       end

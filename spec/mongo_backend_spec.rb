@@ -1,6 +1,4 @@
 require 'spec_helper'
-require 'pry'
-require 'pry-nav'
 require 'perfectsched/backend/mongo'
 
 describe Backend::MongoBackend do
@@ -258,6 +256,7 @@ describe Backend::MongoBackend do
       expect(db.__send__(:create_attributes, row)).to eq(
         timezone: timezone,
         delay: delay,
+        last_time: nil,
         cron: cron,
         data: {"a"=>"b"},
         next_time: next_time,
@@ -275,6 +274,7 @@ describe Backend::MongoBackend do
         delay: 0,
         cron: nil,
         data: {},
+        last_time: nil,
         next_time: nil,
         next_run_time: nil,
         type: 'foo',
@@ -290,6 +290,7 @@ describe Backend::MongoBackend do
         delay: 0,
         cron: nil,
         data: {},
+        last_time: nil,
         next_time: nil,
         next_run_time: nil,
         type: 'foo',
@@ -304,6 +305,7 @@ describe Backend::MongoBackend do
         delay: 0,
         cron: nil,
         data: {},
+        last_time: nil,
         next_time: nil,
         next_run_time: nil,
         type: 'foo',
