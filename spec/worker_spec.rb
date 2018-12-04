@@ -1,4 +1,6 @@
 require 'spec_helper'
+require 'logger'
+require 'perfectqueue/daemons_logger'
 
 describe Worker do
   let (:logger){ double('logger').as_null_object }

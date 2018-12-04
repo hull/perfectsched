@@ -194,7 +194,9 @@ module PerfectSched
         connect {
           n = @collection.update({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time, next_time: next_time, last_time: Time.now.to_i } })['n']
           if n <= 0
-            raise IdempotentAlreadyFinishedError, "task time=#{Time.at(scheduled_time).utc} is already finished"
+            rec = @collection.find(_id: row_id).first
+            STDERR.puts "[perfectsched][IdempotentAlreadyFinishedError] task id=#{row_id} task=#{rec} next_time=#{scheduled_time} time=#{Time.at(scheduled_time).utc} is already finished\n"
+            raise IdempotentAlreadyFinishedError, "task id=#{row_id} task=#{rec} next_time=#{scheduled_time} time=#{Time.at(scheduled_time).utc} is already finished"
           end
         }
       end
