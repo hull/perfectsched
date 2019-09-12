@@ -35,9 +35,8 @@ module PerfectSched
           raise ConfigError, "url option is required for the mongo backend"
         end
 
-        uri = Mongo::URIParser.new(url)
-        @mongo = Mongo::MongoClient.from_uri(url)
-        @db = @mongo.db(uri.db_name)
+        @mongo = Mongo::Client.new(url)
+        @db = @mongo.database
         @collection = @db[config[:collection] || "perfectsched"]
         @mutex = Mutex.new
 
@@ -101,7 +100,7 @@ module PerfectSched
           data = data ? data.dup : {}
           data['type'] = type
           begin
-            @collection.insert({
+            @collection.insert_one({
               _id: key,
               timeout: next_run_time,
               next_time: next_time,
@@ -111,16 +110,16 @@ module PerfectSched
               timezone: timezone
             })
             return Schedule.new(@client, key)
-          rescue Mongo::OperationFailure => err
-            raise IdempotentAlreadyExistsError, "schedule key=#{key} already exists" if err.error_code == 11000
+          rescue Mongo::Error::OperationFailure => err
+            raise IdempotentAlreadyExistsError, "schedule key=#{key} already exists" if err.code == 11000
           end
         }
       end
 
       def delete(key, options)
         connect {
-          n = @collection.remove({ _id: key })['n']
-          if n <= 0
+          res = @collection.delete_one({ _id: key })
+          if res.deleted_count <= 0
             raise IdempotentNotFoundError, "schedule key=#{key} does no exist"
           end
         }
@@ -131,8 +130,8 @@ module PerfectSched
           attrs = options.slice(:cron, :delay, :timezone)
           return nil unless attrs.present?
 
-          n = @collection.update({ _id: key }, {'$set' => attrs })['n']
-          if n <= 0
+          res = @collection.update_one({ _id: key }, {'$set' => attrs })
+          if res.n <= 0
             raise NotFoundError, "schedule key=#{key} does not exist"
           end
         }
@@ -146,15 +145,14 @@ module PerfectSched
           while true
             rows = 0
             find({ timeout: { '$lte' => now } }, sort: { timeout: 1 }, limit: MAX_SELECT_ROW).map { |row|
-              n = @collection.update({ _id: row[:_id], timeout: row[:timeout] }, { '$set' => { timeout: next_timeout } })['n']
-              if n > 0
+              res = @collection.update_one({ _id: row[:_id], timeout: row[:timeout] }, { '$set' => { timeout: next_timeout } })
+              if res.n > 0
                 scheduled_time = row[:next_time]
                 attributes = create_attributes(row)
                 task_token = Token.new(row[:_id], row[:next_time], attributes[:cron], attributes[:delay], attributes[:timezone])
                 task = Task.new(@client, row[:_id], attributes, scheduled_time, task_token)
                 return [task]
               end
-
               rows += 1
             }
             if rows < MAX_SELECT_ROW
@@ -171,8 +169,8 @@ module PerfectSched
         next_run_time = now + alive_time
 
         connect {
-          n = @collection.update({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time } })['n']
-          if n <= 0  # TODO fix
+          res = @collection.update_one({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time } })
+          if res.n <= 0  # TODO fix
             row = find({ _id: row_id, next_time: scheduled_time }).first
             if row == nil
               raise PreemptedError, "task #{task_token.inspect} does not exist or preempted."
@@ -192,8 +190,9 @@ module PerfectSched
         next_run_time = next_time + task_token.delay
 
         connect {
-          n = @collection.update({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time, next_time: next_time, last_time: Time.now.to_i } })['n']
-          if n <= 0
+          ret = @collection.update_one({ _id: row_id, next_time: scheduled_time }, { '$set' => { timeout: next_run_time, next_time: next_time, last_time: Time.now.to_i } })
+          
+          if ret.n <= 0
             rec = @collection.find(_id: row_id).first
             STDERR.puts "[perfectsched][IdempotentAlreadyFinishedError] task id=#{row_id} task=#{rec} next_time=#{scheduled_time} time=#{Time.at(scheduled_time).utc} is already finished\n"
             raise IdempotentAlreadyFinishedError, "task id=#{row_id} task=#{rec} next_time=#{scheduled_time} time=#{Time.at(scheduled_time).utc} is already finished"

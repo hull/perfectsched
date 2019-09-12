@@ -10,10 +10,7 @@ describe Backend::MongoBackend do
   let (:db) do
     d = Backend::MongoBackend.new(client, config)
     s = d.db
-
-    s.collection_names.each do |t|
-      s.drop_collection(t) rescue nil
-    end
+    s.collections.each { |col| col.drop }
     d.init_database(nil)
     d
   end
@@ -34,8 +31,7 @@ describe Backend::MongoBackend do
     end
 
     it 'backward compatibility 1' do
-      # "maint_sched.1.do_hourly", 1339812000, 1339812000, "0 * * * *", 0, {"account_id"=>1}.to_json, "UTC"
-      backend.collection.insert({
+      backend.collection.insert_one({
         _id: "maint_sched.1.do_hourly",
         timeout: 1339812000,
         next_time: 1339812000,
@@ -54,7 +50,7 @@ describe Backend::MongoBackend do
     end
 
     it 'backward compatibility 2' do
-      backend.collection.insert({
+      backend.collection.insert_one({
         _id: "merge",
         timeout: 1339812060,
         next_time: 1339812000,
@@ -168,7 +164,7 @@ describe Backend::MongoBackend do
         db.add('key3', 'test', '* * * * *', 0, 'Asia/Tokyo', {}, now, now, {})
       end
       it 'returns nil' do
-        allow(db.collection).to receive(:update).and_return({ 'n' => 0 })
+        allow(db.collection).to receive(:update_one).and_return(double(n: 0))
         res = db.acquire(0, nil, {})
         expect(res).to be_nil
       end
