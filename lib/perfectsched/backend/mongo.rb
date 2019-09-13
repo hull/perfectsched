@@ -35,7 +35,7 @@ module PerfectSched
           raise ConfigError, "url option is required for the mongo backend"
         end
 
-        @mongo = Mongo::Client.new(url)
+        @mongo = Mongo::Client.new(url, config[:mongo_client] || {})
         @db = @mongo.database
         @collection = @db[config[:collection] || "perfectsched"]
         @mutex = Mutex.new
